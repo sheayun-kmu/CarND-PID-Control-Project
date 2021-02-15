@@ -38,12 +38,12 @@ int main() {
   /**
    * TODO: Initialize the pid variable.
    */
-  double Kp_s = 0.08;
-  double Ki_s = 0.1;
-  double Kd_s = 0.1;
+  double Kp_s = 0.095;
+  double Ki_s = 0.010;
+  double Kd_s = 0.095;
   steer_pid.Init(Kp_s, Ki_s, Kd_s);
 
-  double max_speed = 100.0;
+  double max_speed = 50.0;
   double Kp_t = 0.05;
   double Ki_t = 0.0;
   double Kd_t = 0.0;
@@ -84,7 +84,7 @@ int main() {
            */
           steer_pid.UpdateError(cte);
           steer_value = steer_pid.GetControlValue();
-          steer_pid.DebugDisplay();
+          // steer_pid.DebugDisplay();
           if (steer_value > 1.0) {
             steer_value = 1.0;
           } else if (steer_value < -1.0) {
@@ -117,7 +117,7 @@ int main() {
           }
           if (simul_count == 500) {
             std::cout << "Resetting accumulated error." << std::endl;
-          } else if (simul_count == 2000) {
+          } else if (simul_count == 1000) {
             std::cout << "MSE: " << steer_pid.TotalError() << std::endl;
             exit(0);
           }
