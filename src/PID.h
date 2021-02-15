@@ -3,6 +3,7 @@
 
 class PID {
  public:
+  static const constexpr double i_error_max = 5.0;
   /**
    * Constructor
    */
@@ -26,10 +27,21 @@ class PID {
   void UpdateError(double cte);
 
   /**
+   * Get the current control value.
+   * @output The control value calculated by PID
+   */
+  double GetControlValue(void);
+
+  /**
    * Calculate the total PID error.
    * @output The total PID error
    */
-  double TotalError();
+  double TotalError(void);
+
+  /**
+   * Reset the total PID error.
+   */
+  void ResetTotalError(void);
 
  private:
   /**
@@ -38,10 +50,13 @@ class PID {
   double p_error;
   double i_error;
   double d_error;
+  double cte_prev;
+  double err_acc;
+  int count;
 
   /**
    * PID Coefficients
-   */ 
+   */
   double Kp;
   double Ki;
   double Kd;
