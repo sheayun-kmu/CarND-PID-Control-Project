@@ -45,6 +45,11 @@ class PID {
    */
   void ResetTotalError(void);
 
+  /**
+   * Prints out messages for debugging.
+   */
+  void DebugDisplay(void);
+
  private:
   /**
    * PID Errors
@@ -54,7 +59,13 @@ class PID {
   double d_error;
   double cte_prev;
   double err_acc;
-  int count;
+
+  /**
+   * PID terms
+   */
+  double pterm;
+  double iterm;
+  double dterm;
 
   /**
    * PID Coefficients
@@ -62,6 +73,8 @@ class PID {
   double Kp;
   double Ki;
   double Kd;
+
+  int count;
 
   /**
    * timestamp

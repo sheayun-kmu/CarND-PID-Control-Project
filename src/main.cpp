@@ -84,6 +84,7 @@ int main() {
            */
           steer_pid.UpdateError(cte);
           steer_value = steer_pid.GetControlValue();
+          steer_pid.DebugDisplay();
           if (steer_value > 1.0) {
             steer_value = 1.0;
           } else if (steer_value < -1.0) {

@@ -43,13 +43,11 @@ void PID::UpdateError(double cte) {
     d_error = (cte - cte_prev) / dt;
   }
 
-  /*
   if (i_error > i_error_max) {
     i_error = i_error_max;
   } else if (i_error < -1.0 * i_error_max) {
     i_error = -1.0 * i_error_max;
   }
-  */
 
   cte_prev = cte;
   // accumulate error & count
@@ -58,9 +56,9 @@ void PID::UpdateError(double cte) {
 }
 
 double PID::GetControlValue(void) {
-  double pterm = -1.0 * Kp * p_error;
-  double iterm = -1.0 * Ki * i_error;
-  double dterm = -1.0 * Kd * d_error;
+  pterm = -1.0 * Kp * p_error;
+  iterm = -1.0 * Ki * i_error;
+  dterm = -1.0 * Kd * d_error;
   return pterm + iterm + dterm;
 }
 
@@ -74,4 +72,9 @@ double PID::TotalError(void) {
 void PID::ResetTotalError(void) {
   err_acc = 0.0;
   count = 0;
+}
+
+void PID::DebugDisplay(void) {
+  std::cout << "PE: " << p_error << ", IE: " << i_error << ", DE: " << d_error << std::endl;
+  std::cout << "P: " << pterm << ", I: " << iterm << ", D: " << dterm << std::endl;
 }
