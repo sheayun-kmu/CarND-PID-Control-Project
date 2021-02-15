@@ -38,12 +38,12 @@ int main() {
   /**
    * TODO: Initialize the pid variable.
    */
-  double Kp_s = 0.095;
-  double Ki_s = 0.010;
-  double Kd_s = 0.095;
+  double Kp_s = 0.135;
+  double Ki_s = 0.015;
+  double Kd_s = 0.105;
   steer_pid.Init(Kp_s, Ki_s, Kd_s);
 
-  double max_speed = 50.0;
+  double max_speed = 60.0;
   double Kp_t = 0.05;
   double Ki_t = 0.0;
   double Kd_t = 0.0;
@@ -115,13 +115,12 @@ int main() {
           if (simul_count % 100 == 0) {
             std::cout << "count: " << simul_count << std::endl;
           }
+          if (simul_count % 1000 == 0) {
+            std::cout << "MSE: " << steer_pid.TotalError() << std::endl;
+          }
           if (simul_count == 500) {
             std::cout << "Resetting accumulated error." << std::endl;
-          } else if (simul_count == 1000) {
-            std::cout << "MSE: " << steer_pid.TotalError() << std::endl;
-            exit(0);
           }
-
           json msgJson;
           msgJson["steering_angle"] = steer_value;
           msgJson["throttle"] = throttle_value;
