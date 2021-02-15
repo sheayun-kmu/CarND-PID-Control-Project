@@ -1,5 +1,6 @@
 #include "PID.h"
 
+#include <iostream>
 /**
  * TODO: Complete the PID class. You may add any additional desired functions.
  */
@@ -25,14 +26,31 @@ void PID::UpdateError(double cte) {
   /**
    * TODO: Update PID errors based on cte.
    */
-  p_error = cte;
-  i_error += cte;
+  std::chrono::time_point<std::chrono::system_clock> curr;
+  curr = std::chrono::system_clock::now();
+  double dt = std::chrono::duration<double>(
+    curr - timestamp
+  ).count();
+  timestamp = curr;
+
+  if (count == 0) {
+    p_error = cte;
+    i_error = 0.0;
+    d_error = 0.0;
+  } else {
+    p_error = cte;
+    i_error += cte * dt;
+    d_error = (cte - cte_prev) / dt;
+  }
+
+  /*
   if (i_error > i_error_max) {
     i_error = i_error_max;
   } else if (i_error < -1.0 * i_error_max) {
     i_error = -1.0 * i_error_max;
   }
-  d_error = cte - cte_prev;
+  */
+
   cte_prev = cte;
   // accumulate error & count
   err_acc += cte * cte;

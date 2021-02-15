@@ -38,9 +38,9 @@ int main() {
   /**
    * TODO: Initialize the pid variable.
    */
-  double Kp_s = 0.255;
-  double Ki_s = 0.016;
-  double Kd_s = 28.0;
+  double Kp_s = 0.08;
+  double Ki_s = 0.1;
+  double Kd_s = 0.1;
   steer_pid.Init(Kp_s, Ki_s, Kd_s);
 
   double max_speed = 100.0;
@@ -91,7 +91,7 @@ int main() {
           }
 
           // determine target speed taking angle into account
-          double acc_factor = 1.2;
+          double acc_factor = 2.0;
           double target_speed = max_speed;
           target_speed -= acc_factor * fabs(angle);
 

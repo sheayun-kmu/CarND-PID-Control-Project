@@ -1,9 +1,11 @@
 #ifndef PID_H
 #define PID_H
 
+#include <chrono>
+
 class PID {
  public:
-  static const constexpr double i_error_max = 5.0;
+  static const constexpr double i_error_max = 5.0 * 0.03;
   /**
    * Constructor
    */
@@ -60,6 +62,11 @@ class PID {
   double Kp;
   double Ki;
   double Kd;
+
+  /**
+   * timestamp
+   */
+  std::chrono::time_point<std::chrono::system_clock> timestamp;
 };
 
 #endif  // PID_H
