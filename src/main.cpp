@@ -49,7 +49,7 @@ int main() {
    * NOTE: (1) The maximum speed setting below may not be reached at all.
    *       (2) We do not apply I control or D control, as of yet.
    */
-  double max_speed = 40.0;
+  double max_speed = 60.0;
   double Kp_t = 0.05;
   double Ki_t = 0.0;
   double Kd_t = 0.0;
@@ -87,6 +87,12 @@ int main() {
           double angle = std::stod(j[1]["steering_angle"].get<string>());
           double steer_value;
           double throttle_value;
+
+          /**
+           * Output (to stderr) the cross-track error
+           * for plotting purposes.
+           */
+          std::cerr << cte << std::endl;
 
           /**
            * Calculate steering value here.
