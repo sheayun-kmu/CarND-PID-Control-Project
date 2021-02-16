@@ -1,11 +1,12 @@
 #ifndef PID_H
 #define PID_H
 
+#include <string>
 #include <chrono>
 
 class PID {
  public:
-  static const constexpr double i_error_max = 5.0 * 0.03;
+  static const constexpr double i_error_max = 0.15;
   /**
    * Constructor
    */
@@ -20,7 +21,7 @@ class PID {
    * Initialize PID.
    * @param (Kp_, Ki_, Kd_) The initial PID coefficients
    */
-  void Init(double Kp_, double Ki_, double Kd_);
+  void Init(const std::string& name, double Kp_, double Ki_, double Kd_);
 
   /**
    * Update the PID error variables given cross track error.
@@ -52,6 +53,11 @@ class PID {
 
  private:
   /**
+   * Identifier (name)
+   */
+  std::string id;
+
+  /**
    * PID Errors
    */
   double p_error;
@@ -74,10 +80,13 @@ class PID {
   double Ki;
   double Kd;
 
+  /**
+   * Accumulated counter to calculate MSE
+   */
   int count;
 
   /**
-   * timestamp
+   * Timestamp (used in computing iterm and dterm)
    */
   std::chrono::time_point<std::chrono::system_clock> timestamp;
 };

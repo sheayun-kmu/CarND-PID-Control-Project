@@ -35,20 +35,30 @@ int main() {
 
   PID steer_pid;
   PID throttle_pid;
+
   /**
-   * TODO: Initialize the pid variable.
+   * Initialize a PID controller for steering.
    */
   double Kp_s = 0.135;
   double Ki_s = 0.015;
   double Kd_s = 0.105;
-  steer_pid.Init(Kp_s, Ki_s, Kd_s);
+  steer_pid.Init("STR", Kp_s, Ki_s, Kd_s);
 
-  double max_speed = 60.0;
+  /**
+   * Initialize a PID controller for throttling.
+   * NOTE: (1) The maximum speed setting below may not be reached at all.
+   *       (2) We do not apply I control or D control, as of yet.
+   */
+  double max_speed = 40.0;
   double Kp_t = 0.05;
   double Ki_t = 0.0;
   double Kd_t = 0.0;
-  throttle_pid.Init(Kp_t, Ki_t, Kd_t);
+  throttle_pid.Init("THR", Kp_t, Ki_t, Kd_t);
 
+  /**
+   * Simulation counter - capturing the number of calls to the
+   *                      error updating function.
+   */
   int simul_count = 0;
 
   h.onMessage(
@@ -62,6 +72,7 @@ int main() {
     // The 2 signifies a websocket event
     if (length && length > 2 && data[0] == '4' && data[1] == '2') {
       auto s = hasData(string(data).substr(0, length));
+
       simul_count++;
 
       if (s != "") {
@@ -76,11 +87,10 @@ int main() {
           double angle = std::stod(j[1]["steering_angle"].get<string>());
           double steer_value;
           double throttle_value;
+
           /**
-           * TODO: Calculate steering value here, remember the steering value is
-           *   [-1, 1].
-           * NOTE: Feel free to play around with the throttle and speed.
-           *   Maybe use another PID controller to control the speed!
+           * Calculate steering value here.
+           * NOTE: The steering value should be in range  [-1, 1].
            */
           steer_pid.UpdateError(cte);
           steer_value = steer_pid.GetControlValue();
@@ -91,12 +101,14 @@ int main() {
             steer_value = -1.0;
           }
 
-          // determine target speed taking angle into account
-          double acc_factor = 2.0;
+          // Determine target speed taking angle into account.
+          // The deceleration factor below denotes the % of speed
+          // decelerated from the maximum target (per degree).
+          double decel_factor = 2.0;
           double target_speed = max_speed;
-          target_speed -= acc_factor * fabs(angle);
+          target_speed -= max_speed * decel_factor /100.0 * fabs(angle);
 
-          // calculate throttle value to apply for target speed
+          // Calculate throttle value to apply for target speed.
           double speed_err = speed - target_speed;
           throttle_pid.UpdateError(speed_err);
           throttle_value = throttle_pid.GetControlValue();
@@ -118,9 +130,16 @@ int main() {
           if (simul_count % 1000 == 0) {
             std::cout << "MSE: " << steer_pid.TotalError() << std::endl;
           }
+          /**
+           * The following error reset can be used for performing
+           * a (manual) twiddle for hyperparameter tuning.
+           */
+          /*
           if (simul_count == 500) {
             std::cout << "Resetting accumulated error." << std::endl;
           }
+          */
+
           json msgJson;
           msgJson["steering_angle"] = steer_value;
           msgJson["throttle"] = throttle_value;
