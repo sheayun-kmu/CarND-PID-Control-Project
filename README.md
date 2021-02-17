@@ -1,98 +1,132 @@
-# CarND-Controls-PID
-Self-Driving Car Engineer Nanodegree Program
+# Project: PID Control
+
+### Udacity Self-Driving Car Engineer Nanodegree Program
 
 ---
 
-## Dependencies
+The goal of this project are the following:
 
-* cmake >= 3.5
- * All OSes: [click here for installation instructions](https://cmake.org/install/)
-* make >= 4.1(mac, linux), 3.81(Windows)
-  * Linux: make is installed by default on most Linux distros
-  * Mac: [install Xcode command line tools to get make](https://developer.apple.com/xcode/features/)
-  * Windows: [Click here for installation instructions](http://gnuwin32.sourceforge.net/packages/make.htm)
-* gcc/g++ >= 5.4
-  * Linux: gcc / g++ is installed by default on most Linux distros
-  * Mac: same deal as make - [install Xcode command line tools]((https://developer.apple.com/xcode/features/)
-  * Windows: recommend using [MinGW](http://www.mingw.org/)
-* [uWebSockets](https://github.com/uWebSockets/uWebSockets)
-  * Run either `./install-mac.sh` or `./install-ubuntu.sh`.
-  * If you install from source, checkout to commit `e94b6e1`, i.e.
-    ```
-    git clone https://github.com/uWebSockets/uWebSockets 
-    cd uWebSockets
-    git checkout e94b6e1
-    ```
-    Some function signatures have changed in v0.14.x. See [this PR](https://github.com/udacity/CarND-MPC-Project/pull/3) for more details.
-* Simulator. You can download these from the [project intro page](https://github.com/udacity/self-driving-car-sim/releases) in the classroom.
+* Write (in C++) a PID controller that can be used to guide the simulated vehicle in driving a virtual track provided by Udacity [Term 2 Simulator](https://github.com/udacity/self-driving-car-sim/releases).
+* Integrate the PID controller into a uWebSocket-based server and verify the effectiveness of the PID controller.
+* Tune PID hyperparameters so that the simulated vehicle can drive safely on the virtual track.
 
-Fellow students have put together a guide to Windows set-up for the project [here](https://s3-us-west-1.amazonaws.com/udacity-selfdrivingcar/files/Kidnapped_Vehicle_Windows_Setup.pdf) if the environment you have set up for the Sensor Fusion projects does not work for this project. There's also an experimental patch for windows in this [PR](https://github.com/udacity/CarND-PID-Control-Project/pull/3).
+[//]: # (Image References)
+[40-01]: ./images/40mph-01.png
+[40-02]: ./images/40mph-02.png
+[40-03]: ./images/40mph-03.png
+[90-01]: ./images/90mph-01.png
+[90-02]: ./images/90mph-02.png
+[90-03]: ./images/90mph-03.png
+[cte-40]: ./analysis/40.png
+[cte-60]: ./analysis/60.png
 
-## Basic Build Instructions
+## Rubric Points
 
-1. Clone this repo.
-2. Make a build directory: `mkdir build && cd build`
-3. Compile: `cmake .. && make`
-4. Run it: `./pid`. 
+* The code must faithfully implement the principles of the PID control technique.
+* The simulated vehicle must successfully drive the track.
 
-Tips for setting up your environment can be found [here](https://classroom.udacity.com/nanodegrees/nd013/parts/40f38239-66b6-46ec-ae68-03afd8a601c8/modules/0949fca6-b379-42af-a919-ee50aa304e6a/lessons/f758c44c-5e40-4e01-93b5-1a82aa4e044f/concepts/23d376c7-0195-4276-bdf0-e02f1f3c665d)
+The complete rubric points for this project can be found [here](https://review.udacity.com/#!/rubrics/1972/view).
 
-## Editor Settings
+## Program Build & Execution
 
-We've purposefully kept editor configuration files out of this repo in order to
-keep it as simple and environment agnostic as possible. However, we recommend
-using the following settings:
+In the project root directory, execute (in a shell) the following sequence of commands.
 
-* indent using spaces
-* set tab width to 2 spaces (keeps the matrices in source code aligned)
+```
+# mkdir build
+# cd build
+# cmake .. && make
+# ./pid
+```
 
-## Code Style
+Besides, run the above mentioned simulator on the same machine, which connects and sends requests at port 4567 of the `localhost`. The program `pid` should listen to this port, connect, and responds to the simulator's requests by sending two json-encoded values: `"steering_angle"` and `"throttle"` that are going to be used by the simulator to control the vehicle.
 
-Please (do your best to) stick to [Google's C++ style guide](https://google.github.io/styleguide/cppguide.html).
+## Input Data
 
-## Project Instructions and Rubric
+The request from the simulator contains the following parameters encoded in json format.
 
-Note: regardless of the changes you make, your project must be buildable using
-cmake and make!
+* CTE (cross-track error): deviation of the vehicles lateral position from the center of the track
+* Speed: current velocity of the vehicle
+* Steering angle: current steering angle of the vehicle
 
-More information is only accessible by people who are already enrolled in Term 2
-of CarND. If you are enrolled, see [the project page](https://classroom.udacity.com/nanodegrees/nd013/parts/40f38239-66b6-46ec-ae68-03afd8a601c8/modules/f1820894-8322-4bb3-81aa-b26b3c6dcbaf/lessons/e8235395-22dd-4b87-88e0-d108c5e5bbf4/concepts/6a4d8d42-6a04-4aa6-b284-1697c0fd6562)
-for instructions and the project rubric.
+The PID controller receives a single input of CTE, and the other two are used for debugging and monitoring purposes.
 
-## Hints!
+## Implementation
 
-* You don't have to follow this directory structure, but if you do, your work
-  will span all of the .cpp files here. Keep an eye out for TODOs.
+### PID Controller
 
-## Call for IDE Profiles Pull Requests
+The controller is implemented in a single class (`class PID`). It contains PID terms and errors calculated in each step, state variables to keep the error terms, and most importantly, the PID coefficients. They determine the impact of each of the P (proportional), I (integral), and D (Differential) controllers, being set by initialization (using hyperparameters derived in a way that will be described shortly) and never changed while in operation.
 
-Help your fellow students!
+The member function `Init()` receives as arguments values for the above mentioned hyperparameters and set them in the respective member variables. These are used to calculate the control value in `GetControlValue()` which returns the control output calculated by a linear combination of P, I, and D errors with coefficients being the respective hyperparameters.
 
-We decided to create Makefiles with cmake to keep this project as platform
-agnostic as possible. Similarly, we omitted IDE profiles in order to we ensure
-that students don't feel pressured to use one IDE or another.
+When `UpdateError()` is called, it receives the current CTE (as an argument) and updates each of the P, I, and D error values. The P controller tries to drive the system to the desired state by applying the control value in proportion to the current error. Therefore, the P error is simply defined by the current CTE that captures the system's present state.
 
-However! I'd love to help people get up and running with their IDEs of choice.
-If you've created a profile for an IDE that you think other students would
-appreciate, we'd love to have you add the requisite profile files and
-instructions to ide_profiles/. For example if you wanted to add a VS Code
-profile, you'd add:
+On the other hand, the D controller tries to bring the system to a stable state by minimizing the change in the CTE. For this purpose, it applies the control value in proportional to the CTE's first derivative. This way, the D controller aims at driving the system closer to the desired state in the future.
 
-* /ide_profiles/vscode/.vscode
-* /ide_profiles/vscode/README.md
+Finally, the I controller tries to compensate for the systematic bias or the error accumulated over a longer period of time. For this purpose, it applies the control value in proportional to the CTE integrated over time. This way, the I controller's role in the whole control system is to make up for the loss in the past.
 
-The README should explain what the profile does, how to take advantage of it,
-and how to install it.
+Unlike the simple one (implemented in Python) in the lesson, the PID controller for this project must take time into account, because the simulator (in contrast to the `class Robot` in the lesson) operates in real time. This means that the interval at which PID errors are updated differs (1) from one request to the next in a single simulation, and (2) for different settings and environments that the simulator is run in. Therefore, in calculating the I and D errors, a variable `dt` is used that captures the elapsed time between the previous update and the current one (relying on the system clock).
 
-Frankly, I've never been involved in a project with multiple IDE profiles
-before. I believe the best way to handle this would be to keep them out of the
-repo root to avoid clutter. My expectation is that most profiles will include
-instructions to copy files to a new location to get picked up by the IDE, but
-that's just a guess.
+By taking the time into account, we are expected to (1) eliminate the impact of small deviations of CTE sampling rate, and moreover (2) apply the same PID controller to different simulating environment. For instance, the simulator executed on a local MacOS system with 1024 x 768 resolution and "Simple" graphics quality sends requests (that triggers the error update) approximately at a 30 ms interval, whereas the simulator on the Udacity VM (with the same settings) sends them approximately at a 70 ms interval. The interval also differs for different resolution and quality settings.
 
-One last note here: regardless of the IDE used, every submitted project must
-still be compilable with cmake and make./
+### Vehicle Control
 
-## How to write a README
-A well written README file can enhance your project and portfolio.  Develop your abilities to create professional README files by completing [this free course](https://www.udacity.com/course/writing-readmes--ud777).
+Two instances of the above described PID controller are instantiated and employed in the vehicle control algorithm implemented in `main.cpp`: one for throttle control and the other for steering.
 
+The throttle PID controller is used in a very simple manner. Without any hyperparameter tuning, the algorithm senses the current steering angle (from requests from the simulator) and controls the throttle accordingly. Specifically, only P control is used with the gain set at 0.05, while the other two controls are disabled by setting the respective gains at zero. With the P error being the difference between the vehicle's current velocity and the target speed (both in terms of mph), the control value for the throttle is at the maximum acceleration (1.0) for the vehicle 20 mph slower than target; and conversely at the maximum deceleration (-1.0) for the vehicle 20 mph faster than target, while excess values are trimmed.
+
+With these settings, the target speed is determined according to the current steering angle, since it was observed that the vehicle could not safely drive past a steep corner with high speed. Again, this control is done in a very simple calculation where a deceleration factor of 2.0% for one degree of steering to the maximum speed that is pre-set in the code. In other words, the controller aims at the maximum speed when the vehicle drives straightforward, and decelerate it in proportion to the steering angle.
+
+For the steering PID control, all the three components of the PID controller is enabled by hyperparameters set in a manner that will be described below. Since the PID error is defined in terms of the cross-track error, the controller aims at keeping the vehicle as close as possible to the center of the track. Since the track center is a moving target as the car drives along it, the controller's capability of keeping the center depends on the vehicle's driving speed (also dynamically adjusted). In addition, the controller's performance is also impacted by the granularity of control affecting the system's (vehicle's) behaviour. This issue will be discussed in the following section ("Results").
+
+### Hyperparameter Tuning
+
+The beauty of a PID controller lies in the fact that the same simple framework can be used for virtually all kinds of feedback control systems without the need for knowing the internal structure or mechanism of the target system under control. At the same time, the brutal characteristic of a PID controller is that the control parameters are not systematically derived from system analysis. Rather, the control value depends solely on the observed error (CTE) without taking any other aspect of the system into account. Therefore, the hyperparameters are determined in an empirical manner. A two-step approach was taken to derive the P, I, and D gains (coefficients). First, a reasonably working (testable) combination is sought in a trial-and-error method. Second, fine-tuning was done in a way similar to the twiddle algorithm explained in the lessons. The procedure described here is only applied to one of the two PID controllers (steering control).
+
+In trying to find a reasonable configuration, first the P gain is set largely according to a rule of thumb. With the other two (I & D) controls disabled and the target speed set at a moderately low value, a value that can smoothly steer the vehicle without too much overshoot (on a straight portion of the track) is selected. By gradually increasing the target speed to a certain extent, the simulator gives a "feel" for what could be a candidate around appropriate value of the P gain. Of course, however, since the track is not straight all the time, the P control alone cannot stabilize the vehicle close to the track center.
+
+Next, deriving a reasonable value for the D gain is attempted. Since the D control aims at stabilizing the CTE regardless of its current value, a large D gain results in the control value close to zero even with a large amount of error (overdamping), whereas a small value does not succeed in stabilizing the vehicle before it overshoots (underdamping). Between these two states (overdamped and underdamped), coarse-grain (manual) tweaking was done to derive a tentative value for the D gain.
+
+After the two (P & D) gains are set in a rough manner, the I control is experimented by gradually increasing the I gain in a small magnitude. Here, we expect the I control behaves in a way that it corrects residual (although probably small) error present for a longer period of time even on a (relatively) straight portion of the track. In this experimentation, probably both the P and the D gains need to be adjusted (hopefully slightly) so that the resulting control system becomes more stable as the process repeats.
+
+This manual derivation of a reasonable set of initial values for the three gains may be a tedious (or boring, time-consuming, sometimes even frustrating) process. Nonetheless, tenacious trials (and errors) will pay off at the end, when the vehicle is able to drive at least one lap of the track without coming off of it or heavily treading on an unsafe area, even at a low maximum speed is applied to the throttle control. If more controlled experiment had been possible (e.g. automated repetition of the simulation using the same scenario but with different gain value settings), it would have been much less of a pain to come up with a viable setting, for example applying a heuristic method such as the twiddle algorithm.
+
+Now that we have a set of initial values to tinker with, we perform the second step of the procedure, i.e., fine-tuning the hyperparameters in a more systematic manner. In this project, (again) a manual tuning is done which approximately follows the behaviour of the twiddle algorithm. In other words, beginning from (relatively) large variations in all the three gains, the total error (defined as mean squared error in this project) is measured by increasing and decreasing one gain value while others held constant. The simulation are run for the same (beginnig) portion of the track to compare the resulting MSEs in the same condition.
+
+Note, however, that this measurement does not give the same MSE every time with the same setting, since the simulator presumably involves a certain degree of randomness (at least in terms of its interaction with the server process). Therefore, we do not rely on the accurate and precise measurement of the error. Instead, the twiddling process is rather coarsely, for example discarding a run of simulation when the vehicle goes out of the track or increasing and reducing each hyperparameter's variation amount in a manner not very much consistent. Nevertheless, this fine-tuning is largely expected to enhance the controller's performance although slightly, since we rely on a hard fact (measured MSE) instead of observing the system's behaviour by human eyes which was done in the first phase of the hyperparameter derivation. Of course, the resulting hyperparameters neither guarantee a global minimum of MSE nor give the optimal performance of the system. This is an intrinsic characteristic of the PID control, which nonetheless exhibits good overall performance in practice for a wide range of feedback control systems.
+
+## Results
+
+With the hyperparameters derived according to the method explained in the previous section, a set of simulations were executed on both (1) a local machine running MacOS, and (2) the virtual machine environment provided by Udacity.
+
+![Behaviour of the Simulated Vehicle @ 90 mph #1][90-01]
+![Behaviour of the Simulated Vehicle @ 90 mph #2][90-02]
+![Behaviour of the Simulated Vehicle @ 90 mph #3][90-03]
+
+The three figures above give screenshots taken while the simulator was run on a local machine, with the maximum speed set at 90 mph. Algthough the throttle controller accelerates the vehicle on a straight portion of the track aiming at the target of 90 mph, on average the actual velocity reaches approximately 70 mph at maximum (as illustrated in the first figure). When the vehicle drives in a curved section, it drops the speed down to about 50 mph (see the second and the third figures). Although the vehicle swerves close to the curb, the controller was able to manage to drive it without any serious incident.
+
+If we lower the maximum speed setting, the controller shows a more stable steering of the car, as shown in the following three screenshots taken at approximately the same locations of the track simulated with the maximum speed at 40 mph.
+
+![Behaviour of the Simulated Vehicle @ 40 mph #1][40-01]
+![Behaviour of the Simulated Vehicle @ 40 mph #2][40-02]
+![Behaviour of the Simulated Vehicle @ 40 mph #3][40-03]
+
+We can observe that the speedometer indicates lower (roughly half) speeds for all three cases, the vehicle maintains its trajectory closer to the track center. This behaviour is explained by the natural fact that more speed causes larger deviation when the vehicle is steered to either side. The deviation is greater for steeper corner of the track, where the vehicle gets closer to the edge even though it reduces its speed target and declerates accordingly.
+
+Finally, even though no screenshots are provided here, the controller was also applied to simulation on the Udacity-provided virtual machine. As mentioned earlier, this environment is much different from the local environment in terms of the interval between consecutive requests from (and responses to) the simulator and thus the granularity of control. In other words, the interval at which control is applied to the simulated vehicle is greater in this environment than in the previously described set of simulations.
+
+For this reason, the maximum speed that can be employed by the controller (without causing any trouble for the vehicle) is significantly lower. Specifically, we verified that at least one lap of safe driving was achievable for the maximum speed setting of 60 mph, but that the vehicle drives out of the track for a 90-mph setting.
+
+
+## Discussion
+
+We monitored the CTE for each invocation of the controller by adding a debug output code that emits the value to `stderr` and redirecting the output to a file. The following figure shows the result of plotting the CTE for approximately one lap with the maximum speed setting of 40 mph.
+
+![CTE Plotted over Time @ 40 mph][cte-40]
+
+We observe that the error is between -2 and 2 during the lap. The reason for the error being positive most of the time is that the track bends towards the left hand side most of the time (positive error means the car is right to the center track). The deep valley between the X coordinate 1,500 and 2,000 corresponds to a steep right turn, which is captured in the final screenshots of both sets of three figures in the previous section.
+
+![CTE Plotted over Time @ 60 mph][cte-60]
+
+The above figure shows the same plot for the setting of the maximum speed at 60 mph. Note that the magnitude of the CTE is higher than in the previous case (40-mph setting). However, the trend (captured by the graph's shape) is very similar for both simulation runs. Also note that the scale of X axis is different, since it took a smaller time to complete a lap and therefore a smaller number of requests were made during the simulation.
+
+A final remark is worth making about the controller's performance impacted by logging the CTE. We could not obtain a plot similar to the above two figures with a 90-mph maximum speed setting. This is presumably due to the fact that the server program (implemented in this project) had to spend unnegligible time performing I/O needed to emit a number of strings to `stderr`. This causes degraded responsiveness of the PID controller, and therefore limiting the performance.
