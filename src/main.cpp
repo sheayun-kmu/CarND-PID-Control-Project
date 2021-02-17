@@ -96,7 +96,7 @@ int main() {
 
           /**
            * Calculate steering value here.
-           * NOTE: The steering value should be in range  [-1, 1].
+           * NOTE: The steering value should be in range [-1, 1].
            */
           steer_pid.UpdateError(cte);
           steer_value = steer_pid.GetControlValue();
@@ -112,7 +112,7 @@ int main() {
           // decelerated from the maximum target (per degree).
           double decel_factor = 2.0;
           double target_speed = max_speed;
-          target_speed -= max_speed * decel_factor /100.0 * fabs(angle);
+          target_speed -= max_speed * decel_factor / 100.0 * fabs(angle);
 
           // Calculate throttle value to apply for target speed.
           double speed_err = speed - target_speed;
